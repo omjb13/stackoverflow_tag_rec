@@ -15,10 +15,18 @@ infile = argv[1]
 
 def get_tf_idf_matrices(data_set):
     # expects a list of strings
-    tokenize = lambda doc: doc.split(" ")
-    sklearn_tfidf = TfidfVectorizer(norm='l2',
-        min_df=0, use_idf=True, smooth_idf=False, 
-        sublinear_tf=True, tokenizer=tokenize)
+    tokenize = lambda doc: map(lambda x: x.strip(), doc.split(" "))
+    sklearn_tfidf = TfidfVectorizer(
+        norm='l2',
+        min_df=5, 
+        analyzer='word',
+        use_idf=True, 
+        smooth_idf=False, 
+        sublinear_tf=True, 
+        tokenizer=tokenize,
+        #max_features=50000,
+        ngram_range=(1,2)
+        )
     sklearn_tfidf = sklearn_tfidf.fit(data_set)
     features = sklearn_tfidf.get_feature_names()
     scores = sklearn_tfidf.transform(data_set).toarray()
@@ -54,6 +62,7 @@ def main():
     print "Performing TF-IDF..."
     features, scores = get_tf_idf_matrices(title_and_body)
     encoded_label_vector = get_single_label_vector(labels, current_tag)
+    print features
 
     # TRAIN TEST SPLIT 
     # turning shuffle off so that we can cross reference back with the 
@@ -69,10 +78,10 @@ def main():
     print "np.nonzero(y_test) : ", np.nonzero(y_test)
 
     # MODEL TRAINING 
-    # clf = SVC(kernel='linear')
+    clf = SVC(kernel='linear')
     # clf = Ridge(alpha=0.001)
     # clf = Lasso(alpha=10)
-    clf = DecisionTreeClassifier(random_state=0)
+    #clf = DecisionTreeClassifier(random_state=0)
 
     print "Training Model now..."
     clf.fit(x_train, y_train) 
@@ -95,6 +104,7 @@ def main():
             print "Label mismatch. Predicted %d, is actually %d." % (p,t)
             print "Erroneous body + title : "
             print data[offset+i]
+            print ""
             error += 1
 
     print "%d errors out of %d samples" % (error, y_test.shape[0])
