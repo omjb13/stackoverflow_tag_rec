@@ -7,11 +7,17 @@ import numpy as np
 from sklearn.svm import SVC
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
+from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import train_test_split
 import math 
 
 infile = argv[1] 
+top_100_tags_file = argv[2]
+top_100_tags = map(lambda x: x.split(',')[0].strip(),
+                    open(top_100_tags_file, 'r').readlines())
+
 
 def get_tf_idf_matrices(data_set):
     # expects a list of strings
@@ -44,6 +50,16 @@ def get_single_label_vector(label_vector, required_label):
     return single_label_vector
 
 
+def convert_to_single_label_vector(label_vector):
+    single_label_vector = []
+    for label_list in label_vector:
+        keep_this = label_list.split()[0]
+        encoded_value = top_100_tags.index(keep_this)
+        single_label_vector.append(encoded_value)
+    single_label_vector = np.array(single_label_vector)
+    return single_label_vector
+
+
 def main():
     # CONFIG
     current_tag = 'firefox'
@@ -61,35 +77,17 @@ def main():
     # FEATURE EXTRACTION 
     print "Performing TF-IDF..."
     features, scores = get_tf_idf_matrices(title_and_body)
-    encoded_label_vector = get_single_label_vector(labels, current_tag)
+    encoded_label_vector = convert_to_single_label_vector(labels)
     print features
 
-    # TRAIN TEST SPLIT 
-    # turning shuffle off so that we can cross reference back with the 
-    # original non-TF-IDF'd data 
     x_train, x_test, y_train, y_test = train_test_split(scores, 
                                                         encoded_label_vector, 
                                                         test_size = test_size,
                                                         shuffle=False)
 
-    print "X Train and test : " , x_train.shape, x_test.shape
-    print "y Train and test : " , y_train.shape, y_test.shape
-    print "np.nonzero(y_train) : ", np.nonzero(y_train)
-    print "np.nonzero(y_test) : ", np.nonzero(y_test)
-
-    # MODEL TRAINING 
-    clf = SVC(kernel='linear')
-    # clf = Ridge(alpha=0.001)
-    # clf = Lasso(alpha=10)
-    #clf = DecisionTreeClassifier(random_state=0)
-
-    print "Training Model now..."
-    clf.fit(x_train, y_train) 
-    print "Done."
-
-    # PREDICTION
+    print encoded_label_vector
+    clf = OneVsRestClassifier(LinearSVC(random_state=0)).fit(x_train, y_train)
     predicted_labels = clf.predict(x_test)
-    print "np.nonzero(predicted_labels) : ", np.nonzero(predicted_labels)
 
     error = 0 
     error_checking = zip(predicted_labels, y_test)
@@ -101,14 +99,15 @@ def main():
 
     for i, (p, t) in enumerate(error_checking):
         if p != t:
-            print "Label mismatch. Predicted %d, is actually %d." % (p,t)
+            print "Label mismatch. Predicted %s, is actually %s." % \
+                                            (top_100_tags[p],top_100_tags[t])
             print "Erroneous body + title : "
             print data[offset+i]
             print ""
             error += 1
 
     print "%d errors out of %d samples" % (error, y_test.shape[0])
-
+    
 
 if __name__ == '__main__':
     main()
