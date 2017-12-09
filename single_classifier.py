@@ -1,5 +1,4 @@
 import csv
-from sklearn.feature_extraction.text import TfidfVectorizer
 import string
 import pickle as pickle
 from sys import argv
@@ -11,42 +10,12 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 import math 
 
-infile = argv[1] 
-
-def get_tf_idf_matrices(data_set):
-    # expects a list of strings
-    tokenize = lambda doc: map(lambda x: x.strip(), doc.split(" "))
-    sklearn_tfidf = TfidfVectorizer(
-        norm='l2',
-        min_df=5, 
-        analyzer='word',
-        use_idf=True, 
-        smooth_idf=False, 
-        sublinear_tf=True, 
-        tokenizer=tokenize,
-        #max_features=50000,
-        ngram_range=(1,2)
-        )
-    sklearn_tfidf = sklearn_tfidf.fit(data_set)
-    features = sklearn_tfidf.get_feature_names()
-    scores = sklearn_tfidf.transform(data_set).toarray()
-    return features,scores
-
-
-def get_single_label_vector(label_vector, required_label):
-    single_label_vector = []
-    for label_list in label_vector:
-        if required_label in label_list.split():
-            single_label_vector.append(1)
-        else:
-            single_label_vector.append(0)
-    single_label_vector = np.array(single_label_vector)
-    return single_label_vector
-
+from helpers import get_tf_idf_matrices, create_single_class_label_vector
 
 def main():
     # CONFIG
-    current_tag = 'firefox'
+    infile = argv[1] 
+    current_tag = argv[2]
     test_size = 0.4
 
     # INPUT PARSING
@@ -61,7 +30,7 @@ def main():
     # FEATURE EXTRACTION 
     print "Performing TF-IDF..."
     features, scores = get_tf_idf_matrices(title_and_body)
-    encoded_label_vector = get_single_label_vector(labels, current_tag)
+    encoded_label_vector = create_single_class_label_vector(labels, current_tag)
     print features
 
     # TRAIN TEST SPLIT 
