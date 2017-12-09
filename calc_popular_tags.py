@@ -6,7 +6,7 @@ topN = 500
 tag_counter = defaultdict(int)
 
 for line in file(argv[1]):
-    index,tags = line.split(',')
+    index, tags = line.split(',')
     for tag in tags.split(' '):
         tag_counter[tag.strip()] += 1
 

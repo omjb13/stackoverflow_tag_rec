@@ -1,25 +1,27 @@
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MultiLabelBinarizer
-import numpy as np
+
 
 def get_tf_idf_matrices(data_set):
     # expects a list of strings
-    tokenize = lambda doc: map(lambda x: x.strip(), doc.split(" "))
+    def tokenize():
+        map(lambda x: x.strip(), doc.split(" "))
     sklearn_tfidf = TfidfVectorizer(
         norm='l2',
-        min_df=5, 
+        min_df=5,
         analyzer='word',
-        use_idf=True, 
-        smooth_idf=False, 
-        sublinear_tf=True, 
+        use_idf=True,
+        smooth_idf=False,
+        sublinear_tf=True,
         tokenizer=tokenize,
-        #max_features=50000,
-        ngram_range=(1,2)
-        )
+        # max_features=50000,
+        ngram_range=(1, 2)
+    )
     sklearn_tfidf = sklearn_tfidf.fit(data_set)
     features = sklearn_tfidf.get_feature_names()
     scores = sklearn_tfidf.transform(data_set).toarray()
-    return features,scores
+    return features, scores
 
 
 def create_single_class_label_vector(label_vector, required_label):
@@ -33,6 +35,7 @@ def create_single_class_label_vector(label_vector, required_label):
             single_label_vector.append(0)
     single_label_vector = np.array(single_label_vector)
     return single_label_vector
+
 
 def create_multiclass_label_vector(label_vector, list_of_labels):
     # this class picks the 1st label for each row of label_vector, 

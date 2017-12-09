@@ -2,13 +2,13 @@ from sys import argv
 import csv
 from collections import defaultdict
 
-headers = ["Id","Title","Body","Tags"]
+headers = ["Id", "Title", "Body", "Tags"]
 
 training_file = argv[1]
 top_tags_file = argv[2]
 outfile = argv[3]
 
-top_100_tags = open(top_tags_file,'r').readlines()
+top_100_tags = open(top_tags_file, 'r').readlines()
 top_100_tags = map(lambda x: x.split(',')[0], top_100_tags)
 top_100_tags = set(top_100_tags)
 

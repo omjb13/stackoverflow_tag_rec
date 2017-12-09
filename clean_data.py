@@ -5,13 +5,13 @@ from IPython.display import display, HTML
 from sys import argv
 from nltk.corpus import stopwords
 
-#stop words
+# stop words
 stop = stopwords.words('english')
 if 'for' in stop:
     stop.remove('for')
 stop = map(lambda x: x.encode('utf-8'), stop)
 
-#define regexes
+# define regexes
 punctuations = string.punctuation
 punctuations_to_keep = '#'
 punctuations = ''.join((set(punctuations) - set(punctuations_to_keep)))
@@ -24,7 +24,7 @@ regexOpeningTags = re.compile(r'<.*?>', flags=re.IGNORECASE)
 regexClosingTags = re.compile(r'<\/.*?>', flags=re.IGNORECASE)
 regexNumbers = re.compile(r'\d+')
 
-df = pd.read_csv(argv[1]) 
+df = pd.read_csv(argv[1])
 
 # New line removal
 df["Body"] = df["Body"].str.replace(regexNewline, " ")

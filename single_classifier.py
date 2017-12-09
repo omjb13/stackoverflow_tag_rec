@@ -8,13 +8,14 @@ from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
-import math 
+import math
 
 from helpers import get_tf_idf_matrices, create_single_class_label_vector
 
+
 def main():
     # CONFIG
-    infile = argv[1] 
+    infile = argv[1]
     current_tag = argv[2]
     test_size = 0.4
 
@@ -36,13 +37,13 @@ def main():
     # TRAIN TEST SPLIT 
     # turning shuffle off so that we can cross reference back with the 
     # original non-TF-IDF'd data 
-    x_train, x_test, y_train, y_test = train_test_split(scores, 
-                                                        encoded_label_vector, 
-                                                        test_size = test_size,
+    x_train, x_test, y_train, y_test = train_test_split(scores,
+                                                        encoded_label_vector,
+                                                        test_size=test_size,
                                                         shuffle=False)
 
-    print "X Train and test : " , x_train.shape, x_test.shape
-    print "y Train and test : " , y_train.shape, y_test.shape
+    print "X Train and test : ", x_train.shape, x_test.shape
+    print "y Train and test : ", y_train.shape, y_test.shape
     print "np.nonzero(y_train) : ", np.nonzero(y_train)
     print "np.nonzero(y_test) : ", np.nonzero(y_test)
 
@@ -50,29 +51,29 @@ def main():
     clf = SVC(kernel='linear')
     # clf = Ridge(alpha=0.001)
     # clf = Lasso(alpha=10)
-    #clf = DecisionTreeClassifier(random_state=0)
+    # clf = DecisionTreeClassifier(random_state=0)
 
     print "Training Model now..."
-    clf.fit(x_train, y_train) 
+    clf.fit(x_train, y_train)
     print "Done."
 
     # PREDICTION
     predicted_labels = clf.predict(x_test)
     print "np.nonzero(predicted_labels) : ", np.nonzero(predicted_labels)
 
-    error = 0 
+    error = 0
     error_checking = zip(predicted_labels, y_test)
 
-    #this bit is hacky, it's just to get the original question text back
+    # this bit is hacky, it's just to get the original question text back
     offset = int(math.floor(len(data) * (1 - test_size)))
 
     print "Beginning error checking..."
 
     for i, (p, t) in enumerate(error_checking):
         if p != t:
-            print "Label mismatch. Predicted %d, is actually %d." % (p,t)
+            print "Label mismatch. Predicted %d, is actually %d." % (p, t)
             print "Erroneous body + title : "
-            print data[offset+i]
+            print data[offset + i]
             print ""
             error += 1
 
