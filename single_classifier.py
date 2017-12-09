@@ -99,12 +99,15 @@ def main():
 
     for i, (p, t) in enumerate(error_checking):
         if p != t:
-            print "Label mismatch. Predicted %s, is actually %s." % \
-                                            (top_100_tags[p],top_100_tags[t])
-            print "Erroneous body + title : "
-            print data[offset+i]
-            print ""
-            error += 1
+            current_record = data[offset+i]
+            predicted, true = top_100_tags[p], top_100_tags[t]
+            if predicted not in current_record[3]:
+                print "Label mismatch. Predicted %s, is actually %s." % \
+                                                (top_100_tags[p],top_100_tags[t])
+                print "Erroneous body + title : "
+                print data[offset+i]
+                print ""
+                error += 1
 
     print "%d errors out of %d samples" % (error, y_test.shape[0])
     
