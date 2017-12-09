@@ -1,17 +1,18 @@
 import csv
-from sklearn.feature_extraction.text import TfidfVectorizer
-import string
-import pickle as pickle
-from sys import argv
+import math 
 import numpy as np
+import pickle as pickle
 from sklearn.svm import SVC
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import train_test_split
-import math 
+from sklearn.preprocessing import MultiLabelBinarizer
+import string
+from sys import argv
 
 infile = argv[1] 
 top_100_tags_file = argv[2]
@@ -60,9 +61,18 @@ def convert_to_single_label_vector(label_vector):
     return single_label_vector
 
 
+def convert_to_multilabel_array(label_vector):
+    all_labels = []
+    for label_list in label_vector:
+        labels = label_list.split()
+        all_labels.append(labels)
+    binarizer = MultiLabelBinarizer().fit(all_labels)
+    final_labels = binarizer.transform(all_labels)
+    return binarizer, final_labels
+
+
 def main():
     # CONFIG
-    current_tag = 'firefox'
     test_size = 0.4
 
     # INPUT PARSING
@@ -77,17 +87,22 @@ def main():
     # FEATURE EXTRACTION 
     print "Performing TF-IDF..."
     features, scores = get_tf_idf_matrices(title_and_body)
-    encoded_label_vector = convert_to_single_label_vector(labels)
-    print features
+    binarizer, encoded_label_vector = convert_to_multilabel_array(labels)
 
     x_train, x_test, y_train, y_test = train_test_split(scores, 
                                                         encoded_label_vector, 
                                                         test_size = test_size,
                                                         shuffle=False)
 
-    print encoded_label_vector
+    print "X Train and test : " , x_train.shape, x_test.shape
+    print "y Train and test : " , y_train.shape, y_test.shape
+
     clf = OneVsRestClassifier(LinearSVC(random_state=0)).fit(x_train, y_train)
     predicted_labels = clf.predict(x_test)
+
+    #convert back to lists of labels
+    predicted_labels = binarizer.inverse_transform(predicted_labels)
+    y_test = binarizer.inverse_transform(y_test)
 
     error = 0 
     error_checking = zip(predicted_labels, y_test)
@@ -98,18 +113,16 @@ def main():
     print "Beginning error checking..."
 
     for i, (p, t) in enumerate(error_checking):
-        if p != t:
+        p = set(p)
+        t = set(t)
+        if not p.intersection(t):
+            print "predicted : ", p
+            print "true : ", t
             current_record = data[offset+i]
-            predicted, true = top_100_tags[p], top_100_tags[t]
-            if predicted not in current_record[3]:
-                print "Label mismatch. Predicted %s, is actually %s." % \
-                                                (top_100_tags[p],top_100_tags[t])
-                print "Erroneous body + title : "
-                print data[offset+i]
-                print ""
-                error += 1
-
-    print "%d errors out of %d samples" % (error, y_test.shape[0])
+            print "entire record : \n", current_record
+            error += 1
+            print ""
+    print "%d errors out of %d samples" % (error, len(y_test))
     
 
 if __name__ == '__main__':
