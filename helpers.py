@@ -5,8 +5,8 @@ from sklearn.preprocessing import MultiLabelBinarizer
 
 def get_tf_idf_matrices(data_set):
     # expects a list of strings
-    def tokenize():
-        map(lambda x: x.strip(), doc.split(" "))
+    def tokenize(x):
+        return x.strip().split(" ")
     sklearn_tfidf = TfidfVectorizer(
         norm='l2',
         min_df=5,
