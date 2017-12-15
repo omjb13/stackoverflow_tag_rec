@@ -3,20 +3,20 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MultiLabelBinarizer
 
 
-def get_tf_idf_matrices(data_set):
+def get_tf_idf_matrices(data_set, min_df=5, ngram_range=(1,2), max_features=None):
     # expects a list of strings
     def tokenize(x):
         return x.strip().split(" ")
     sklearn_tfidf = TfidfVectorizer(
         norm='l2',
-        min_df=5,
+        min_df=min_df,
         analyzer='word',
         use_idf=True,
         smooth_idf=False,
         sublinear_tf=True,
         tokenizer=tokenize,
-        # max_features=50000,
-        ngram_range=(1, 2)
+        max_features=max_features,
+        ngram_range=ngram_range
     )
     sklearn_tfidf = sklearn_tfidf.fit(data_set)
     features = sklearn_tfidf.get_feature_names()

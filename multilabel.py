@@ -4,7 +4,9 @@ from sklearn.metrics import f1_score, recall_score, precision_score
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import LinearSVC
+import numpy as np
 from helpers import get_tf_idf_matrices, create_multilabel_label_vector
+import math
 
 
 class MultiLabelClassifier:
@@ -13,7 +15,8 @@ class MultiLabelClassifier:
         self.x_test = data['test']
         self.y_train = labels['train']
         self.y_test = labels['test']
-        self.predicted_labels = []
+        # TODO - don't initialize a numpy array, that's silly.
+        self.predicted_labels = np.array([])
         self.scores = {}
 
     def train_classifier(self):
@@ -26,7 +29,7 @@ class MultiLabelClassifier:
 
     def get_accuracy_scores(self):
         # if we haven't already run prediction, predict now.
-        if not self.predicted_labels:
+        if self.predicted_labels.shape == 0:
             _ = self.predict_labels()
         # Using the micro F1 score because we can have labels that end up with an F1
         # score of 0 as there are no samples for that label, thereby bringing down overall F1
@@ -41,6 +44,7 @@ class MultiLabelClassifier:
 def main():
     # CONFIG
     test_size = 0.4
+    verbose_error_checking = False
 
     # INPUT
     infile = argv[1]
@@ -57,7 +61,7 @@ def main():
     # FEATURE EXTRACTION 
     print "Performing TF-IDF..."
 
-    features, scores = get_tf_idf_matrices(title_and_body)
+    features, scores = get_tf_idf_matrices(title_and_body, max_features=20000)
 
     # we need to save the binarizer so we can convert back to a list of 
     # labels later for the error checking.
@@ -85,8 +89,33 @@ def main():
     mc = MultiLabelClassifier(data_packed, labels_packed)
     print "Training model now..."
     mc.train_classifier()
+    predicted_labels = mc.predict_labels()
     for score_type, score in mc.get_accuracy_scores().iteritems():
         print "%s : %f" % (score_type, score)
+
+    # verbose_error_checking
+    if verbose_error_checking:
+        # convert back to lists of labels
+        predicted_labels = binarizer.inverse_transform(predicted_labels)
+        y_test = binarizer.inverse_transform(y_test)
+        error = 0
+        error_checking = zip(predicted_labels, y_test)
+        # this bit is hacky, it's just to get the original question text back
+        offset = int(math.floor(len(data) * (1 - test_size)))
+        print "Beginning error checking..."
+        for i, (p, t) in enumerate(error_checking):
+            p = set(p)
+            t = set(t)
+            # do any of the predicted labels overlap with the true labels?
+            # if so, not an error.
+            if not p.intersection(t):
+                print "predicted : ", p
+                print "true : ", t
+                current_record = data[offset + i]
+                print "entire record : \n", current_record
+                error += 1
+                print ""
+        print "%d errors out of %d samples" % (error, len(y_test))
 
 
 if __name__ == '__main__':
