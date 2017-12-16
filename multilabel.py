@@ -1,17 +1,17 @@
 import csv
+import math
 from sys import argv
 
+import numpy as np
+from sklearn import decomposition
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score, recall_score, precision_score
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import LinearSVC, SVC
-import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 
 from helpers import get_tf_idf_matrices, create_multilabel_label_vector
-from sklearn import decomposition
-import math
 
 
 class MultiLabelClassifier:
@@ -24,16 +24,16 @@ class MultiLabelClassifier:
         self.predicted_labels = np.array([])
         self.scores = {}
 
-    def train_classifier(self, method='svm'):
+    def train_classifier(self, method='linear_svm'):
         if method == 'linear_svm':
-            self.clf = OneVsRestClassifier(LinearSVC(random_state=0)).fit(data_set, self.y_train)
+            self.clf = OneVsRestClassifier(LinearSVC()).fit(self.x_train, self.y_train)
         elif method == 'dtree':
-            self.clf = OneVsRestClassifier(DecisionTreeClassifier()).fit(data_set, self.y_train)
+            self.clf = OneVsRestClassifier(DecisionTreeClassifier(max_depth=10)).fit(self.x_train, self.y_train)
         elif method == 'sgd':
             # uses hinge loss by default
-            self.clf = OneVsRestClassifier(SGDClassifier(n_jobs=-1)).fit(data_set, self.y_train)
+            self.clf = OneVsRestClassifier(SGDClassifier(n_jobs=-1)).fit(self.x_train, self.y_train)
         elif method == 'svm':
-            self.clf = OneVsRestClassifier(SVC()).fit(data_set, self.y_train)
+            self.clf = OneVsRestClassifier(SVC()).fit(self.x_train, self.y_train)
         return self.clf
 
     def predict_labels(self):
@@ -56,9 +56,9 @@ class MultiLabelClassifier:
 
 def main():
     # CONFIG
-    method = 'linear_svm'
+    method = 'dtree'
     test_size = 0.3
-    components_to_keep = 1000
+    components_to_keep = 900
     max_features = 3000
     shuffle_data_sets = True
     # shuffle has to be False if you want verbose error checking
@@ -77,15 +77,17 @@ def main():
     labels = [i[3] for i in data]
 
     # FEATURE EXTRACTION 
-    print "Performing TF-IDF..."
+    print "Performing TF-IDF with max_features=%d..." % max_features
 
     features, scores = get_tf_idf_matrices(title_and_body, max_features=max_features)
+    print "scores.shape : ", scores.shape
 
     # we need to save the binarizer so we can convert back to a list of
     # labels later for the error checking.
     binarizer, encoded_label_vector = create_multilabel_label_vector(labels)
 
     # PCA
+    print "Performing PCA with %d components..." % components_to_keep
     pca = decomposition.IncrementalPCA(n_components=components_to_keep)
     scores_r = pca.fit(scores).transform(scores)
 
@@ -95,8 +97,8 @@ def main():
                                                         test_size=test_size,
                                                         shuffle=shuffle_data_sets)
 
-    print "X Train and test : ", x_train.shape, x_test.shape
-    print "y Train and test : ", y_train.shape, y_test.shape
+    print "X Train and Test : ", x_train.shape, x_test.shape
+    print "y Train and Test : ", y_train.shape, y_test.shape
 
     data_packed = {
         'train': x_train,
@@ -111,8 +113,8 @@ def main():
     mc = MultiLabelClassifier(data_packed, labels_packed)
 
     # MODEL TRAINING
-    print "Training model now..."
-    mc.train_classifier()
+    print "Training a %s classifier..." % method
+    mc.train_classifier(method=method)
     predicted_labels = mc.predict_labels()
     for score_type, score in mc.get_accuracy_scores().iteritems():
         print "%s : %f" % (score_type, score)
