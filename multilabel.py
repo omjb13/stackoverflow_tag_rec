@@ -19,8 +19,20 @@ class MultiLabelClassifier:
         self.predicted_labels = np.array([])
         self.scores = {}
 
-    def train_classifier(self):
-        self.clf = OneVsRestClassifier(LinearSVC(random_state=0)).fit(self.x_train, self.y_train)
+    def train_classifier(self, method='svm', use='original'):
+        if use == 'pca':
+            data_set = self.reduced_x_train
+        else:
+            data_set = self.x_train
+        if method == 'linear_svm':
+            self.clf = OneVsRestClassifier(LinearSVC(random_state=0)).fit(data_set, self.y_train)
+        elif method == 'dtree':
+            self.clf = OneVsRestClassifier(DecisionTreeClassifier()).fit(data_set, self.y_train)
+        elif method == 'sgd':
+            #uses hinge loss by default
+            self.clf = OneVsRestClassifier(SGDClassifier(n_jobs=-1)).fit(data_set, self.y_train)
+        elif method == 'svm':
+            self.clf = OneVsRestClassifier(SVC()).fit(data_set, self.y_train)
         return self.clf
 
     def predict_labels(self):
